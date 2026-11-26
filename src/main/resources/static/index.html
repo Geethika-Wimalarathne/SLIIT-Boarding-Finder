@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SLIIT Boarding Finder</title>
+    <style>
+        * { box-sizing: border-box; font-family: "Segoe UI", Arial, sans-serif; }
+        body { margin: 0; background: #f8fafc; color: #0f172a; }
+        nav {
+          background: #0f172a;
+          color: #fff;
+          padding: 14px 28px;
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+        }
+        .nav-brand { font-size: 18px; font-weight: 700; color: #93c5fd; text-decoration: none; }
+        .nav-links { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+        .nav-links a, .nav-links button {
+          color: #e2e8f0;
+          text-decoration: none;
+          background: transparent;
+          border: 1px solid #334155;
+          padding: 6px 12px;
+          border-radius: 8px;
+          font-size: 13px;
+          cursor: pointer;
+        }
+        .nav-links a:hover, .nav-links button:hover { background: #1e293b; }
+        .container { max-width: 1120px; margin: 24px auto; padding: 0 20px; }
+        .filters {
+          background: #fff;
+          padding: 18px;
+          border-radius: 12px;
+          box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+          gap: 14px;
+          align-items: end;
+          margin-bottom: 24px;
+        }
+        label { display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 5px; }
+        input, select, textarea {
+          width: 100%;
+          padding: 9px 11px;
+          border: 1px solid #cbd5e1;
+          border-radius: 8px;
+          font-size: 14px;
+        }
+        .btn-primary {
+          background: #2563eb;
+          color: #fff;
+          border: none;
+          padding: 10px 14px;
+          border-radius: 8px;
+          font-weight: 600;
+          cursor: pointer;
+        }
+        .btn-primary:hover { background: #1d4ed8; }
+        .btn-secondary {
+          background: #e2e8f0;
+          color: #1e293b;
+          border: none;
+          padding: 10px 14px;
+          border-radius: 8px;
+          font-weight: 600;
+          cursor: pointer;
+        }
+        .grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+          gap: 20px;
+        }
+        .card {
+          background: #fff;
+          border-radius: 14px;
+          padding: 18px;
+          box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+        }
+        .price { font-size: 20px; font-weight: 700; color: #1e3a8a; margin: 6px 0; }
+        .muted { font-size: 13px; color: #475569; line-height: 1.5; }
+        .badge {
+          display: inline-block;
+          font-size: 12px;
+          padding: 4px 10px;
+          border-radius: 999px;
+          background: #eff6ff;
+          color: #1d4ed8;
+          font-weight: 600;
+        }
+        .review-box {
+          margin-top: 14px;
+          padding-top: 12px;
+          border-top: 1px solid #e2e8f0;
+        }
+        .review-form {
+          display: flex;
+          gap: 8px;
+          margin-top: 8px;
+        }
+        .review-form select { width: 85px; }
+        .review-form button {
+          background: #0f172a;
+          color: #fff;
+          border: none;
+          padding: 8px 12px;
+          border-radius: 8px;
+          cursor: pointer;
+          font-weight: 600;
+        }
+        .review-item {
+          background: #f8fafc;
+          padding: 8px 10px;
+          border-radius: 8px;
+          margin-top: 8px;
+          font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+<nav>
+    <a class="nav-brand" href="/index.html">SLIIT Boarding Finder</a>
+    <div class="nav-links" id="navRight">
+        <a href="/index.html">Boardings</a>
+        <a href="/owner.html">Owner Dashboard</a>
+        <a href="/admin.html">Admin</a>
+        <a href="/login.html" id="authLink">Login / Register</a>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="filters">
+        <div>
+            <label for="searchInput">Search Title / Address</label>
+            <input type="text" id="searchInput" placeholder="e.g. Annex or Malabe" />
+        </div>
+        <div>
+            <label for="maxPrice">Max Monthly Rent (LKR)</label>
+            <input type="number" id="maxPrice" placeholder="e.g. 25000" />
+        </div>
+        <div>
+            <label for="maxDistance">Max Distance to SLIIT (km)</label>
+            <input type="number" step="0.1" id="maxDistance" placeholder="e.g. 1.5" />
+        </div>
+        <div style="display:flex; gap:8px;">
+            <button type="button" class="btn-primary" style="flex:1" onclick="applyFilters()">Filter</button>
+            <button type="button" class="btn-secondary" onclick="resetFilters()">Reset</button>
+        </div>
+    </div>
+
+    <div id="listingsContainer" class="grid"></div>
+</div>
+
+<script>
+    let allListings = [];
+
+    function renderAuthNav() {
+      const raw = localStorage.getItem("sliitUser");
+      const navRight = document.getElementById("navRight");
+      if (!navRight) return;
+      const ownerLink = navRight.querySelector('a[href="/owner.html"]');
+      const adminLink = navRight.querySelector('a[href="/admin.html"]');
+
+      if (!raw) {
+        if (ownerLink) ownerLink.style.display = "none";
+        if (adminLink) adminLink.style.display = "none";
+        return;
+      }
+
+      const user = JSON.parse(raw || "{}");
+      if (ownerLink && user.role !== "OWNER" && user.role !== "ADMIN") {
+        ownerLink.style.display = "none";
+      }
+      if (adminLink && user.role !== "ADMIN") {
+        adminLink.style.display = "none";
+      }
+
+      const authLink = document.getElementById("authLink");
+      if (authLink) authLink.remove();
+
+      const span = document.createElement("span");
+      span.style.fontSize = "13px";
+      span.style.color = "#93c5fd";
+      span.textContent = `${user.name || ""} (${user.role || ""})`;
+
+      const logoutBtn = document.createElement("button");
+      logoutBtn.textContent = "Logout";
+      logoutBtn.onclick = () => {
+        localStorage.removeItem("sliitUser");
+        window.location.reload();
+      };
+      navRight.append(span, logoutBtn);
+    }
+
+    async function loadApprovedListings() {
+      const grid = document.getElementById("listingsContainer");
+      if (!grid) return;
+      try {
+        const res = await fetch("/api/listings");
+        const data = await res.json();
+        allListings = Array.isArray(data) ? data : [];
+        renderListings(allListings);
+      } catch (e) {
+        grid.innerHTML = "<div class='card'>Failed to load boarding listings.</div>";
+      }
+    }
+
+    function applyFilters() {
+      const search = (document.getElementById("searchInput")?.value || "").trim().toLowerCase();
+      const maxPrice = Number(document.getElementById("maxPrice")?.value || 0);
+      const maxDist = Number(document.getElementById("maxDistance")?.value || 0);
+
+      const filtered = allListings.filter(item => {
+        const title = String(item.title || "").toLowerCase();
+        const address = String(item.address || "").toLowerCase();
+        const matchesText = !search || title.includes(search) || address.includes(search);
+        const matchesPrice = !maxPrice || Number(item.price || 0) <= maxPrice;
+        const matchesDist = !maxDist || Number(item.distanceKm ?? 999999) <= maxDist;
+        return matchesText && matchesPrice && matchesDist;
+      });
+
+      renderListings(filtered);
+    }
+
+    function resetFilters() {
+      if (document.getElementById("searchInput")) document.getElementById("searchInput").value = "";
+      if (document.getElementById("maxPrice")) document.getElementById("maxPrice").value = "";
+      if (document.getElementById("maxDistance")) document.getElementById("maxDistance").value = "";
+      renderListings(allListings);
+    }
+
+    function renderListings(list) {
+      const grid = document.getElementById("listingsContainer");
+      if (!grid) return;
+      if (!Array.isArray(list) || !list.length) {
+        grid.innerHTML = "<div class='card'>No matching approved boardings found.</div>";
+        return;
+      }
+
+      grid.innerHTML = list.map(item => `
+        <div class="card">
+          <div>
+            ${item.imageUrl ? `<img src="${escapeHtml(item.imageUrl)}" alt="${escapeHtml(item.title)}" style="width:100%; height:180px; object-fit:cover; border-radius:10px; margin-bottom:12px;" />` : ""}
+            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+              <span class="badge">${escapeHtml(item.distanceKm ?? "")} km from SLIIT</span>
+              ${item.rooms ? `<span class="badge">${escapeHtml(item.rooms)} Rooms</span>` : ""}
+            </div>
+            <h3 style="margin:10px 0 6px;">${escapeHtml(item.title)}</h3>
+            ${item.address ? `<div class="muted">${escapeHtml(item.address)}</div>` : ""}
+            <div class="price">LKR ${Number(item.price || 0).toLocaleString()} / month</div>
+            <div class="muted" style="margin-bottom:10px;">Contact: <strong>${escapeHtml(item.phone)}</strong></div>
+            <p style="font-size:14px; color:#334155;">${escapeHtml(item.description || "No description provided.")}</p>
+          </div>
+
+          <div class="review-box">
+            <strong>Student Reviews</strong>
+            <div id="reviews-${item.id}" class="muted" style="margin-top:6px;">Loading reviews...</div>
+            <div class="review-form">
+              <select id="rating-${item.id}">
+                <option value="5">5 ★</option>
+                <option value="4">4 ★</option>
+                <option value="3">3 ★</option>
+                <option value="2">2 ★</option>
+                <option value="1">1 ★</option>
+              </select>
+              <input type="text" id="comment-${item.id}" placeholder="Write a review..." />
+              <button type="button" onclick="submitReview(${item.id})">Post</button>
+            </div>
+          </div>
+        </div>
+      `).join("");
+
+      list.forEach(item => loadReviews(item.id));
+    }
+
+    async function loadReviews(listingId) {
+      const box = document.getElementById(`reviews-${listingId}`);
+      if (!box) return;
+      try {
+        const res = await fetch(`/api/reviews/listing/${listingId}`);
+        const reviews = await res.json();
+        if (!Array.isArray(reviews) || !reviews.length) {
+          box.innerHTML = "<div class='muted'>No reviews yet.</div>";
+          return;
+        }
+        box.innerHTML = reviews.map(r => {
+          const reviewerName = r.user?.name || r.studentName || "Student";
+          return `
+            <div class="review-item">
+              <strong>${escapeHtml(reviewerName)}</strong> • ${"★".repeat(Number(r.rating || 0))}
+              <div>${escapeHtml(r.comment)}</div>
+            </div>
+          `;
+        }).join("");
+      } catch (e) {
+        box.innerHTML = "<div class='muted'>Could not load reviews.</div>";
+      }
+    }
+
+    async function submitReview(listingId) {
+      const raw = localStorage.getItem("sliitUser");
+      if (!raw) {
+        alert("Please login as a Student to post a review.");
+        window.location.href = "/login.html";
+        return;
+      }
+      const user = JSON.parse(raw || "{}");
+      if (!user.id) {
+        alert("User ID missing. Please login again.");
+        window.location.href = "/login.html";
+        return;
+      }
+
+      const rating = Number(document.getElementById(`rating-${listingId}`)?.value || 5);
+      const commentInput = document.getElementById(`comment-${listingId}`);
+      const comment = (commentInput?.value || "").trim();
+
+      if (!comment) {
+        alert("Please enter a review comment.");
+        return;
+      }
+
+      const res = await fetch("/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          listingId,
+          userId: user.id,
+          rating,
+          comment
+        })
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        alert(errData.error || "Failed to submit review.");
+        return;
+      }
+
+      if (commentInput) commentInput.value = "";
+      await loadReviews(listingId);
+    }
+
+    function escapeHtml(str) {
+      return String(str ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+    }
+
+    renderAuthNav();
+    loadApprovedListings();
+</script>
+</body>
+</html>

@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SLIIT Boarding Finder — Login & Register</title>
+    <style>
+        * { box-sizing: border-box; font-family: "Segoe UI", Arial, sans-serif; }
+        body {
+          margin: 0;
+          min-height: 100vh;
+          background: linear-gradient(135deg, #0f172a, #1e3a8a);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+          color: #0f172a;
+        }
+        .card {
+          background: #ffffff;
+          width: 100%;
+          max-width: 440px;
+          border-radius: 16px;
+          padding: 28px;
+          box-shadow: 0 20px 45px rgba(0, 0, 0, 0.25);
+        }
+        .brand { text-align: center; margin-bottom: 20px; }
+        .brand h1 { margin: 0; font-size: 22px; color: #1e3a8a; }
+        .brand p { margin: 6px 0 0; font-size: 13px; color: #64748b; }
+        .tabs {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          background: #f1f5f9;
+          padding: 4px;
+          border-radius: 10px;
+          margin-bottom: 20px;
+        }
+        .tab-btn {
+          border: none;
+          background: transparent;
+          padding: 10px;
+          border-radius: 8px;
+          font-weight: 600;
+          cursor: pointer;
+          color: #475569;
+        }
+        .tab-btn.active {
+          background: #ffffff;
+          color: #1e3a8a;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+        }
+        .form-group { margin-bottom: 14px; }
+        label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #334155; }
+        input, select {
+          width: 100%;
+          padding: 10px 12px;
+          border: 1px solid #cbd5e1;
+          border-radius: 8px;
+          font-size: 14px;
+        }
+        input:focus, select:focus { outline: none; border-color: #2563eb; }
+        .submit-btn {
+          width: 100%;
+          padding: 11px;
+          border: none;
+          border-radius: 8px;
+          background: #2563eb;
+          color: #fff;
+          font-size: 15px;
+          font-weight: 600;
+          cursor: pointer;
+          margin-top: 6px;
+        }
+        .submit-btn:hover { background: #1d4ed8; }
+        .msg {
+          margin-top: 14px;
+          padding: 10px 12px;
+          border-radius: 8px;
+          font-size: 13px;
+          display: none;
+        }
+        .msg.error { display: block; background: #fee2e2; color: #991b1b; }
+        .msg.success { display: block; background: #dcfce7; color: #166534; }
+        .top-link { text-align: center; margin-top: 16px; font-size: 13px; }
+        .top-link a { color: #2563eb; text-decoration: none; font-weight: 600; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+<div class="card">
+    <div class="brand">
+        <h1>SLIIT Boarding Finder</h1>
+        <p>Malabe Campus Student & Owner Portal</p>
+    </div>
+
+    <div class="tabs">
+        <button type="button" class="tab-btn active" id="loginTab" onclick="switchTab('login')">Login</button>
+        <button type="button" class="tab-btn" id="registerTab" onclick="switchTab('register')">Register</button>
+    </div>
+
+    <form id="loginForm" onsubmit="handleLogin(event)">
+        <div class="form-group">
+            <label for="loginEmail">Email</label>
+            <input type="email" id="loginEmail" required placeholder="student@sliit.lk" />
+        </div>
+        <div class="form-group">
+            <label for="loginPassword">Password</label>
+            <input type="password" id="loginPassword" required placeholder="Enter password" />
+        </div>
+        <button type="submit" class="submit-btn">Login</button>
+    </form>
+
+    <form id="registerForm" class="hidden" onsubmit="handleRegister(event)">
+        <div class="form-group">
+            <label for="regName">Full Name</label>
+            <input type="text" id="regName" required placeholder="Nimal Silva" />
+        </div>
+        <div class="form-group">
+            <label for="regEmail">Email</label>
+            <input type="email" id="regEmail" required placeholder="nimal@sliit.lk" />
+        </div>
+        <div class="form-group">
+            <label for="regPassword">Password</label>
+            <input type="password" id="regPassword" required minlength="6" placeholder="Min 6 characters" />
+        </div>
+        <div class="form-group">
+            <label for="regRole">Role</label>
+            <select id="regRole">
+                <option value="STUDENT">Student</option>
+                <option value="OWNER">Boarding Owner</option>
+            </select>
+        </div>
+        <button type="submit" class="submit-btn">Create Account</button>
+    </form>
+
+    <div id="msgBox" class="msg"></div>
+    <div class="top-link"><a href="/index.html">Browse Approved Boardings →</a></div>
+</div>
+
+<script>
+    function switchTab(tab) {
+      const isLogin = tab === "login";
+      document.getElementById("loginTab").classList.toggle("active", isLogin);
+      document.getElementById("registerTab").classList.toggle("active", !isLogin);
+      document.getElementById("loginForm").classList.toggle("hidden", !isLogin);
+      document.getElementById("registerForm").classList.toggle("hidden", isLogin);
+      hideMsg();
+    }
+
+    function showMsg(text, type) {
+      const box = document.getElementById("msgBox");
+      box.textContent = text;
+      box.className = "msg " + type;
+    }
+
+    function hideMsg() {
+      const box = document.getElementById("msgBox");
+      box.className = "msg";
+      box.textContent = "";
+    }
+
+    function redirectByRole(user) {
+      localStorage.setItem("sliitUser", JSON.stringify(user));
+      if (user.role === "OWNER") {
+        window.location.href = "/owner.html";
+      } else if (user.role === "ADMIN") {
+        window.location.href = "/admin.html";
+      } else {
+        window.location.href = "/index.html";
+      }
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      hideMsg();
+      const payload = {
+        email: document.getElementById("loginEmail").value.trim(),
+        password: document.getElementById("loginPassword").value
+      };
+      try {
+        const res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          showMsg(data.error || "Login failed", "error");
+          return;
+        }
+        showMsg("Login successful! Redirecting...", "success");
+        setTimeout(() => redirectByRole(data), 600);
+      } catch (err) {
+        showMsg("Network error connecting to server", "error");
+      }
+    }
+
+    async function handleRegister(e) {
+      e.preventDefault();
+      hideMsg();
+      const payload = {
+        name: document.getElementById("regName").value.trim(),
+        email: document.getElementById("regEmail").value.trim(),
+        password: document.getElementById("regPassword").value,
+        role: document.getElementById("regRole").value
+      };
+      try {
+        const res = await fetch("/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          showMsg(data.error || "Registration failed", "error");
+          return;
+        }
+        showMsg("Account created! Redirecting...", "success");
+        setTimeout(() => redirectByRole(data), 600);
+      } catch (err) {
+        showMsg("Network error connecting to server", "error");
+      }
+    }
+</script>
+</body>
+</html>
